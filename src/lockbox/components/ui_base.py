@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import asyncio
-from src.components.lb_config import LBConfig as config
+from src.lockbox.components.config import Config as config
 import __main__ as main
 
 
@@ -99,7 +99,6 @@ class ChatFrontend:
         """Async callback for sending messages"""
         message = self.message_entry.get().strip()
         if message and self.send_callback:
-            print("test")
             await self.send_callback(message)
         self.message_entry.delete(0, tk.END)
 

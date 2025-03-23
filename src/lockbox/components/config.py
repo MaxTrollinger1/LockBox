@@ -1,9 +1,8 @@
 import sv_ttk
 
-class LBConfig:
+class Config:
     # Window settings
     WINDOW_TITLE = "LockBox"
-    #ICON = "src/assets/m_icon.ico"
     DEFAULT_WIDTH = 600
     DEFAULT_HEIGHT = 450
     RESIZABLE = (True, True)  # (width_resizable, height_resizable)
@@ -30,9 +29,8 @@ class LBConfig:
     @staticmethod
     def apply_config(window):
         """Apply the configuration settings to the given Tkinter window."""
-        window.title(LBConfig.WINDOW_TITLE)
-        window.geometry(f"{LBConfig.DEFAULT_WIDTH}x{LBConfig.DEFAULT_HEIGHT}")
-        window.resizable(*LBConfig.RESIZABLE)
-        window.configure(bg=LBConfig.THEME["background"])
-        #window.iconbitmap(LBConfig.ICON)
-        sv_ttk.set_theme(LBConfig.THEME["theme"])
+        window.title(Config.WINDOW_TITLE)
+        window.geometry(f"{Config.DEFAULT_WIDTH}x{Config.DEFAULT_HEIGHT}")
+        window.resizable(*Config.RESIZABLE)
+        window.configure(bg=Config.THEME["background"])
+        sv_ttk.set_theme(Config.THEME["theme"])
