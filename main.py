@@ -1,9 +1,9 @@
 import asyncio
 import tkinter as tk
-import components.network as net
+import src.components.network as net
 import requests
 
-from src.lockbox.components.ui_base import ChatFrontend
+from src.components.ui_base import ChatFrontend
 from datetime import datetime
 
 global app

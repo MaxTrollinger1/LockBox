@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import asyncio
-from src.lockbox.components.config import Config as config
+from src.components.config import Config as config
 import __main__ as main
 
 
