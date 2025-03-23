@@ -1,20 +1,26 @@
 import asyncio
+import random
 import tkinter as tk
-import components.network as net
+import src.components.network as net
 import requests
+import websockets
 
-from src.lockbox.components.ui_base import ChatFrontend
+from src.components import ui_base as ui
+from functools import wraps
+
 from datetime import datetime
 
 global app
 global serv
 global root
+global nick
 
 serv = None
 app = None
 root = None
+nick = "User"
 
-C_PORT = 12345
+C_PORT = 5555
 
 
 #region Networking
@@ -28,11 +34,10 @@ def get_public_ip():
         return f"Error: {e}"
 
 
-async def setup_serv(ip, port, is_creator):
-    """Set up server if not already running."""
-    global serv
-    serv = await net.setup_p2p(get_public_ip(), C_PORT, True)
 
+async def connect(ip, port, is_creator):
+    global serv
+    serv = await net.setup_p2p(ip, port, is_creator)
 
 async def update_async_tk(root, interval=0.05):
     """Run the tkinter mainloop with an asyncio event loop."""
@@ -65,12 +70,24 @@ async def cleanup():
 def terminate():
     """Handle the application exit event."""
     print("[DEBUG] Quit requested, running cleanup...")
-    asyncio.create_task(quit_app())
+    loop = asyncio.get_event_loop()
+    asyncio.ensure_future(quit_app(loop), loop=loop)
 
-async def quit_app():
+# cancel all tasks in the event loop
+def cancel_all_tasks(loop):
+    # get all tasks
+    tasks = asyncio.all_tasks(loop)
+    for task in tasks:
+        task.cancel()
+
+async def quit_app(loop):
     """Quit the app gracefully (Async)."""
     await cleanup()  # Perform all cleanup tasks
+
+    loop.stop()  # Gracefully stop the loop
+
     if root is not None:
+        app.debug_message("root is not none destroying")
         root.destroy()
     print("[DEBUG] Application closed.")
 #endregion
@@ -81,6 +98,7 @@ def is_hosting():
     return serv is not None
 
 #endregion
+
 async def main():
     """
     Main async function to run the application.
@@ -88,11 +106,16 @@ async def main():
     try:
         global app
         global root
+        global nick
+
+        nick = "USER " + str(random.randint(1, 100))
 
         # Initialize tkinter root
         root = tk.Tk()
-        app = ChatFrontend(root)
+        app = ui.ChatFrontend(root)
         now = datetime.now()
+
+        #root.iconbitmap("src/assets/m_icon.ico")
 
         current_time = now.strftime("%H:%M:%S")
         app.debug_message(f"Application started at time = {current_time}")
@@ -101,17 +124,19 @@ async def main():
 
         # Define callbacks
         async def send_message(message):
-            await serv.try_send_msg(message)
-            app.display_message(message, "You")
+            global serv
+            global nick
+            await net.try_send_msg(message)
+            app.display_message(message, nick)
 
         async def join_chat(ip, port):
             app.debug_message(f"Attempting to join {ip}:{port}")
-            await setup_serv(ip, port, False)
+            await connect(ip, port, False)
             app.debug_message(f"Joined host at {ip}:{port}")
 
         async def create_chat():
             app.debug_message(f"Starting host on {get_public_ip()} on port {C_PORT}")
-            await setup_serv(get_public_ip(), C_PORT, True)
+            await connect(get_public_ip(), C_PORT, True)
             app.debug_message("Chat host created")
 
         async def stop_host():
@@ -127,6 +152,7 @@ async def main():
         app.set_stop_host_callback(stop_host)
 
         await update_async_tk(root)
+
     except asyncio.CancelledError:
         print("[DEBUG] asyncio CancelledError occurred")
         await cleanup()
@@ -136,7 +162,9 @@ async def main():
     finally:
         print("[DEBUG] Event loop is shutting down.")
 
-
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except:
+        pass
+    #asyncio.run(main())
