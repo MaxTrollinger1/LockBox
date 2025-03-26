@@ -5,14 +5,17 @@ import requests
 
 from src.components.ui_base import ChatFrontend
 from datetime import datetime
+from src.components.nickname import generate_nickname
 
 global app
 global serv
 global root
+global nick
 
 serv = None
 app = None
 root = None
+nick = None
 
 C_PORT = 12345
 
@@ -28,10 +31,10 @@ def get_public_ip():
         return f"Error: {e}"
 
 
-async def setup_serv(ip, port, is_creator):
+async def setup_serv(ip, port, is_creator, nn):
     """Set up server if not already running."""
     global serv
-    serv = await net.setup_p2p(get_public_ip(), C_PORT, True)
+    serv = await net.setup_p2p(get_public_ip(), C_PORT, True, nn)
 
 
 async def update_async_tk(root, interval=0.05):
@@ -88,11 +91,14 @@ async def main():
     try:
         global app
         global root
+        global nick
 
         # Initialize tkinter root
         root = tk.Tk()
         app = ChatFrontend(root)
         now = datetime.now()
+
+        nick = generate_nickname()
 
         current_time = now.strftime("%H:%M:%S")
         app.debug_message(f"Application started at time = {current_time}")
@@ -106,12 +112,12 @@ async def main():
 
         async def join_chat(ip, port):
             app.debug_message(f"Attempting to join {ip}:{port}")
-            await setup_serv(ip, port, False)
+            await setup_serv(ip, port, False, nick)
             app.debug_message(f"Joined host at {ip}:{port}")
 
         async def create_chat():
             app.debug_message(f"Starting host on {get_public_ip()} on port {C_PORT}")
-            await setup_serv(get_public_ip(), C_PORT, True)
+            await setup_serv(get_public_ip(), C_PORT, True, nick)
             app.debug_message("Chat host created")
 
         async def stop_host():
