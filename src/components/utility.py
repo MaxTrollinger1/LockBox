@@ -1,3 +1,4 @@
+import random
 import socket
 
 def get_local_ip():
@@ -11,3 +12,10 @@ def get_local_ip():
     finally:
         s.close()
     return ip
+
+def generate_random_port(min_port: int = 1024, max_port: int = 65535) -> int:
+    """
+    Generate a random port number within the valid range.
+    Default range is from 1024 to 65535 (excluding well-known ports 0-1023).
+    """
+    return random.randint(min_port, max_port)

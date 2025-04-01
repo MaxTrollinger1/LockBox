@@ -1,8 +1,11 @@
 import asyncio
 import tkinter as tk
-import src.components.network as net
-import requests
 
+import aiohttp
+
+import src.components.net.network as net
+
+from src.components import utility
 from src.components.ui_base import ChatFrontend
 from datetime import datetime
 from src.components.nickname import generate_nickname
@@ -11,6 +14,9 @@ global app
 global serv
 global root
 global nick
+
+# PyInstaller command to create a single-file executable:
+# pyinstaller --onefile --windowed --name LockBox --icon src/assets/m_icon.ico main.py
 
 serv = None
 app = None
@@ -22,19 +28,19 @@ C_PORT = 12345
 
 #region Networking
 
-def get_public_ip():
-    """Fetch the public IP address synchronously."""
+async def get_public_ip():
     try:
-        response = requests.get('https://api.ipify.org')
-        return response.text
-    except requests.RequestException as e:
+        async with aiohttp.ClientSession() as session:
+            async with session.get('https://api.ipify.org') as response:
+                return await response.text()
+    except Exception as e:
         return f"Error: {e}"
 
 
-async def setup_serv(ip, port, is_creator, nn):
-    """Set up server if not already running."""
+async def setup_connection(ip, port, is_creator, nn):
+    """Set up connection if not already running."""
     global serv
-    serv = await net.setup_p2p(get_public_ip(), C_PORT, True, nn)
+    serv = await net.setup_p2p(ip, port, is_creator, nn)
 
 
 async def update_async_tk(root, interval=0.05):
@@ -107,18 +113,20 @@ async def main():
 
         # Define callbacks
         async def send_message(message):
-            await serv.try_send_msg(message)
-            app.display_message(message, "You")
+            result = await serv.try_send_msg(message)
+            if result is True:
+                app.display_message(message, "You")
 
         async def join_chat(ip, port):
             app.debug_message(f"Attempting to join {ip}:{port}")
-            await setup_serv(ip, port, False, nick)
-            app.debug_message(f"Joined host at {ip}:{port}")
+
 
         async def create_chat():
-            app.debug_message(f"Starting host on {get_public_ip()} on port {C_PORT}")
-            await setup_serv(get_public_ip(), C_PORT, True, nick)
-            app.debug_message("Chat host created")
+            global C_PORT
+            C_PORT = utility.generate_random_port()
+            pub_ip = await get_public_ip()
+            app.debug_message(f"Starting host on {pub_ip} on port {C_PORT}")
+
 
         async def stop_host():
             app.debug_message("Stopping host...")
